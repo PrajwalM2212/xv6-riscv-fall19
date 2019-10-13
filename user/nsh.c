@@ -113,7 +113,6 @@ struct cmd *parsecmd(char *buf) {
 
     if ((index = token_index(s, pipe_char)) >= 0) {
         printf("Pipe present at %d\n", index);
-        /*
         struct cmd *lcmd, *rcmd;
         char *left =  buf;
         char *right = buf + index + 1;
@@ -121,7 +120,6 @@ struct cmd *parsecmd(char *buf) {
         lcmd = parsecmd(left);
         rcmd = parsecmd(right);
         printf("%d %d\n", lcmd->type, rcmd->type);
-         */
         return 0;
     }
     s = buf;
@@ -162,5 +160,9 @@ struct cmd *parsecmd(char *buf) {
     for (int i = 0; i < argc; i++) {
         printf("%s\n", *(argv+i));
     }
-    return 0;
+    struct execcmd *cmd;
+    cmd->type = EXEC;
+    cmd->argc = argc;
+    cmd->argv = argv;
+    return (struct cmd *)cmd;
 }
