@@ -17,7 +17,7 @@ struct cmd {
 struct execcmd {
     int type;
     int argc;
-    char **argv;
+    char *argv[MAXARGS];
 };
 
 struct pipecmd {
@@ -120,6 +120,11 @@ struct cmd *parsecmd(char *buf) {
         lcmd = parsecmd(left);
         rcmd = parsecmd(right);
         printf("%d %d\n", lcmd->type, rcmd->type);
+        if(lcmd->type == EXEC){
+            struct execcmd *ecd =  (struct execcmd*)lcmd;
+            printf("%d \n", ecd->argc);
+            printf("%s\n", ecd->argv[(ecd->argc)-1]);
+        }
         return 0;
     }
     s = buf;
@@ -131,38 +136,33 @@ struct cmd *parsecmd(char *buf) {
     printf("Exec command\n");
     char *start = buf;
     int argc = 0;
-    char *argv[MAXARGS];
-    char whitespace[] = " \t\r\n\v";
     char *es = start + strlen(start);
     char arg;
     int i = 0;
-    //printf("%d\n", strlen(start));
+    struct execcmd *cmd;
+    cmd = malloc(sizeof(*cmd));
+    cmd -> type = EXEC;
     while (start < es) {
-        if (strchr(whitespace, *start)) {
+        if (*start == ' ') {
             start++;
-            continue;
         } else {
             int j = i;
-            argc++;
-            printf("%d", argc);
-            while (strchr(whitespace, *start) == 0 && start < es) {
+            while ((*start != ' ') && start < es) {
                 *(&arg + i) = *start;
                 i++;
                 start++;
             }
             *(&arg + i) = 0;
-            argv[argc-1] = &arg+j;
+            argc++;
+            cmd->argv[argc-1] = &arg+j;
             i++;
-            printf("%s\n", &arg);
         }
+
     }
 
-    for (int i = 0; i < argc; i++) {
-        printf("%s\n", *(argv+i));
-    }
-    struct execcmd *cmd;
-    cmd->type = EXEC;
     cmd->argc = argc;
-    cmd->argv = argv;
-    return (struct cmd *)cmd;
+    for(int k =0; k<argc; k++){
+        printf("%s\n", cmd->argv[k]);
+    }
+    return (struct cmd*)cmd;
 }
