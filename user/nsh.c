@@ -116,7 +116,7 @@ void parsecmd(char *buf) {
     char *s = buf;
 
     if ((index = token_index(s, pipe_char)) >= 0) {
-        printf("Pipe present at %d\n", index);
+        //printf("Pipe present at %d\n", index);
         char *left = buf;
         char *right = buf + index + 1;
         *(left + index) = 0;
@@ -160,7 +160,7 @@ void parsecmd(char *buf) {
 }
 
 void runexeccmd(char *buf) {
-    printf("Exec command\n");
+    //printf("Exec command\n");
     char *start = buf;
     int argc = 0;
     char *es = start + strlen(start);
@@ -189,7 +189,7 @@ void runexeccmd(char *buf) {
     //printf("%d\n", argc);
     int k = 0;
     while(cmd.argv[k] && k < 10){
-        printf("%s\n", cmd.argv[k]);
+        //printf("%s\n", cmd.argv[k]);
         k++;
     }
     exec(cmd.argv[0], cmd.argv);
