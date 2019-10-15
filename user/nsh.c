@@ -37,7 +37,8 @@ int getcmd(char *buf, int nbuf);
 
 char *strip(char *buf);
 
-struct cmd *parsecmd(char *s);
+void parsecmd(char *s);
+void runexeccmd(char *s);
 
 
 int main(void) {
@@ -65,7 +66,10 @@ int main(void) {
             continue;
         }
         buf[strlen(buf) - 1] = 0;
-        parsecmd(buf);
+        //if(fork() == 0) {
+            parsecmd(buf);
+        //}
+        wait(0);
     }
     exit(0);
 }
@@ -105,43 +109,65 @@ int token_index(char *s, char *pattern) {
 }
 
 
-struct cmd *parsecmd(char *buf) {
+void parsecmd(char *buf) {
     char *pipe_char = "|";
-    char *redir_char = "<>";
+    //char *redir_char = "<>";
     int index;
     char *s = buf;
 
     if ((index = token_index(s, pipe_char)) >= 0) {
         printf("Pipe present at %d\n", index);
-        struct cmd *lcmd, *rcmd;
-        char *left =  buf;
+        char *left = buf;
         char *right = buf + index + 1;
         *(left + index) = 0;
-        lcmd = parsecmd(left);
-        rcmd = parsecmd(right);
-        printf("%d %d\n", lcmd->type, rcmd->type);
-        if(lcmd->type == EXEC){
-            struct execcmd *ecd =  (struct execcmd*)lcmd;
-            printf("%d \n", ecd->argc);
-            printf("%s\n", ecd->argv[(ecd->argc)-1]);
+        int p[2];
+        if(pipe(p) < 0){
+            printf("Error while pipe\n");
+            return;
         }
-        return 0;
+        if(fork() == 0){
+            close(1);
+            dup(p[1]);
+            close(p[0]);
+            close(p[1]);
+            runexeccmd(left);
+        }
+
+        if(fork() == 0){
+            close(0);
+            dup(p[0]);
+            close(p[0]);
+            close(p[1]);
+            runexeccmd(right);
+        }
+        close(p[0]);
+        close(p[1]);
+        wait(0);
+        wait(0);
+        return;
     }
+    /*
     s = buf;
     if ((index = token_index(s, redir_char)) >= 0) {
         printf("Redir present at %d\n", index);
         return 0;
     }
+    */
+    if(fork() == 0) {
+        runexeccmd(buf);
+    }
+    wait(0);
+}
 
+void runexeccmd(char *buf) {
     printf("Exec command\n");
     char *start = buf;
     int argc = 0;
     char *es = start + strlen(start);
     char arg;
     int i = 0;
-    struct execcmd *cmd;
-    cmd = malloc(sizeof(*cmd));
-    cmd -> type = EXEC;
+    struct execcmd cmd;
+    cmd.type = EXEC;
     while (start < es) {
         if (*start == ' ') {
             start++;
@@ -152,17 +178,19 @@ struct cmd *parsecmd(char *buf) {
                 i++;
                 start++;
             }
-            *(&arg + i) = 0;
+            *(&arg + i) = '\0';
             argc++;
-            cmd->argv[argc-1] = &arg+j;
+            cmd.argv[argc - 1] = &arg + j;
             i++;
         }
-
     }
-
-    cmd->argc = argc;
-    for(int k =0; k<argc; k++){
-        printf("%s\n", cmd->argv[k]);
+    memset(cmd.argv+argc, 0, MAXARGS-argc);
+    cmd.argc = argc;
+    //printf("%d\n", argc);
+    int k = 0;
+    while(cmd.argv[k] && k < 10){
+        printf("%s\n", cmd.argv[k]);
+        k++;
     }
-    return (struct cmd*)cmd;
-}
+    exec(cmd.argv[0], cmd.argv);
+};
